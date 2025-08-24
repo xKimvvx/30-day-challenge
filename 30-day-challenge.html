@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>30 Dagen Fitness Uitdaging</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        /* Aangepaste scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #fce7f3; }
+        ::-webkit-scrollbar-thumb { background: #f472b6; border-radius: 10px; }
+        
+        .day-card.all-complete {
+            background-color: #fce7f3; /* pink-50 */
+            border-color: #ec4899; /* pink-500 */
+        }
+        .day-card.all-complete .day-badge {
+            background-color: #ec4899; /* pink-500 */
+            color: white;
+        }
+        .task-item.completed .task-text {
+            text-decoration: line-through;
+            color: #f9a8d4; /* pink-300 */
+        }
+        
+        .day-card, .progress-bar-fill, .view-btn {
+            transition: all 0.3s ease-in-out;
+        }
+        
+        #celebration-canvas {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9999;
+        }
+
+        .view-btn.active-view {
+            background-color: white;
+            color: #ec4899; /* pink-500 */
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+        }
+        
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        /* Modal stijlen */
+        #modal-backdrop {
+            transition: opacity 0.3s ease-in-out;
+        }
+        #modal-content {
+            transition: transform 0.3s ease-in-out;
+        }
+        .title-font {
+            font-family: 'Dancing Script', cursive;
+        }
+        .quote-font {
+            font-family: 'Dancing Script', cursive;
+            font-size: 1.75rem; /* 28px */
+            line-height: 2.25rem; /* 36px */
+        }
+        /* Kalender Stijlen */
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 0.5rem;
+        }
+        .calendar-day {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 2.5rem;
+            width: 2.5rem;
+            border-radius: 9999px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .calendar-day:hover {
+            background-color: #fbcfe8; /* pink-200 */
+        }
+        .calendar-day.selected {
+            background-color: #ec4899; /* pink-500 */
+            color: white;
+            font-weight: bold;
+        }
+        .calendar-day.empty {
+            cursor: default;
+        }
+        .calendar-day.empty:hover {
+            background-color: transparent;
+        }
+    </style>
+</head>
+<body class="bg-pink-50 text-pink-800">
+    <canvas id="celebration-canvas"></canvas>
+    <div id="app-container" class="max-w-4xl mx-auto p-4 sm:p-6">
+
+        <!-- Landingspagina Scherm -->
+        <div id="landing-screen" class="hidden text-center">
+             <div class="bg-white p-8 rounded-2xl shadow-lg">
+                <h1 class="text-4xl font-bold text-pink-600 mb-4 title-font">Klaar voor een reset? Let's go! 🔥</h1>
+                <p class="text-pink-500 mb-8 max-w-xl mx-auto leading-relaxed">
+                    Even eerlijk, meiden... Soms heb je gewoon even een schop onder je kont nodig. Een nieuwe start. Ik voelde dat zó hard na mijn operatie. Mijn lichaam en hoofd schreeuwden om een nieuwe uitdaging om weer op gang te komen. Daarom creëerde ik deze <strong>30-dagen challenge</strong> voor mezelf.
+                    <br><br>
+                    Mijn hoofddoel? Minstens 60 km lopen, wat dus neerkomt op minstens 3 loopsessies in de week waarin ik 5 km loop. 🏃‍♀️ Een compleet nieuwe uitdaging was voor mij dé manier om de draad weer op te pakken. Daarnaast voegde ik nog een paar persoonlijke doelen toe die voor mij belangrijk waren om die totale reset te voelen.
+                    <br><br>
+                    En nu is het aan jou! Je kan mijn challenge volgen, maar de échte kracht zit ‘m in het persoonlijk maken. Wat heb JIJ nu nodig? Is dat die 60 km, of is het misschien een ander doel rondom je voeding, je slaap of je krachttraining?
+                    <br><br>
+                    Dit is een belofte aan jezelf. De eerste stap naar een nieuwe routine en een sterkere versie van wie je al bent. Laten we die stap samen zetten. Let's do this! <span style="color: #ec4899;">❤</span>
+                </p>
+                <label class="inline-flex items-center space-x-3 cursor-pointer p-3 rounded-lg hover:bg-pink-50 mb-6">
+                    <input type="checkbox" id="commitment-checkbox" class="h-6 w-6 rounded border-pink-300 text-pink-600 focus:ring-pink-500">
+                    <span class="text-2xl text-pink-700 title-font">Ready to commit</span>
+                </label>
+            </div>
+        </div>
+
+        <!-- Setup Scherm -->
+        <div id="setup-screen" class="hidden">
+            <div class="bg-white p-6 sm:p-8 rounded-2xl shadow-lg">
+                <h1 class="text-4xl font-bold text-pink-600 mb-2 title-font">Stel je Challenge in</h1>
+                <p class="text-pink-500 mb-6">Personaliseer je doelen en kies je startdatum.</p>
+                
+                 <div class="mb-6">
+                    <h2 class="text-3xl text-pink-800 mb-3 title-font">Jouw Doelen</h2>
+                    <div class="space-y-4">
+                        <!-- Hoofddoel Tracker Setup -->
+                        <div class="bg-pink-50 p-4 rounded-lg">
+                            <label class="flex items-center space-x-3 cursor-pointer">
+                                <input type="checkbox" id="setup-show-main-goal" class="h-5 w-5 rounded border-pink-300 text-pink-600 focus:ring-pink-500">
+                                <span class="font-semibold text-pink-700">Hoofddoel 30 dagen challenge</span>
+                            </label>
+                            <p class="text-sm text-pink-500 mt-1">Stel een overkoepelend doel voor de hele challenge. Dit is optioneel, je kan ook kiezen voor enkel dagelijkse en wekelijkse doelen.</p>
+                            <div id="setup-main-goal-details" class="mt-3 space-y-2 hidden">
+                                <label for="setup-main-goal-title" class="text-sm font-medium text-pink-600">Titel voor je hoofddoel (bv. minstens 60 km hardlopen):</label>
+                                <input type="text" id="setup-main-goal-title" class="w-full px-3 py-2 border border-pink-200 rounded-lg" value="Minstens 60 km hardlopen 🏃‍♀️">
+                                <label class="flex items-center space-x-3 cursor-pointer mt-2">
+                                    <input type="checkbox" id="setup-main-goal-has-tracker" class="h-5 w-5 rounded border-pink-300 text-pink-600 focus:ring-pink-500">
+                                    <span class="text-sm font-medium text-pink-700">Voeg een numerieke tracker toe (optioneel)</span>
+                                </label>
+                                <div id="setup-main-goal-tracker-input" class="hidden">
+                                    <label for="setup-main-goal-target" class="text-sm font-medium text-pink-600">Wat is je totale doel voor 30 dagen?</label>
+                                    <input type="number" id="setup-main-goal-target" class="w-full px-3 py-2 border border-pink-200 rounded-lg" value="60" placeholder="bv. 60">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-6">
+                    <h2 class="text-3xl text-pink-800 mb-3 title-font">Jouw Dagelijkse Doelen</h2>
+                    <ul id="tasks-list" class="space-y-2 mb-3"></ul>
+                    <div class="flex gap-2">
+                        <input type="text" id="new-task-input" placeholder="Voeg een nieuw doel toe..." class="w-full px-3 py-2 border border-pink-200 rounded-lg focus:ring-2 focus:ring-pink-500">
+                        <button id="add-task-btn" class="bg-pink-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-pink-600">Voeg toe</button>
+                    </div>
+                </div>
+                
+                <div class="mb-6">
+                    <h2 class="text-3xl text-pink-800 mb-3 title-font">Jouw Wekelijkse Doelen</h2>
+                    <div class="space-y-4">
+                         <!-- Cardio Tracker Setup -->
+                        <div class="bg-pink-50 p-4 rounded-lg">
+                            <label class="flex items-center space-x-3 cursor-pointer">
+                                <input type="checkbox" id="setup-show-cardio" class="h-5 w-5 rounded border-pink-300 text-pink-600 focus:ring-pink-500" checked>
+                                <span class="font-semibold text-pink-700">Toon Cardio Tracker</span>
+                            </label>
+                             <p class="text-sm text-pink-500 mt-1">Houd je wekelijkse aantal cardiosessies bij.</p>
+                            <div id="setup-cardio-details" class="mt-3 space-y-2">
+                                <label for="setup-cardio-title" class="text-sm font-medium text-pink-600">Titel voor je tracker:</label>
+                                <input type="text" id="setup-cardio-title" class="w-full px-3 py-2 border border-pink-200 rounded-lg" value="Aantal cardiosessies per week">
+                                <label for="setup-cardio-target" class="text-sm font-medium text-pink-600">Hoeveel cardiosessies wil je per week doen?</label>
+                                <input type="number" id="setup-cardio-target" class="w-full px-3 py-2 border border-pink-200 rounded-lg" value="3" placeholder="bv. 3">
+                            </div>
+                        </div>
+                        <!-- Gym Tracker Setup -->
+                        <div class="bg-pink-50 p-4 rounded-lg">
+                            <label class="flex items-center space-x-3 cursor-pointer">
+                                <input type="checkbox" id="setup-show-strength" class="h-5 w-5 rounded border-pink-300 text-pink-600 focus:ring-pink-500" checked>
+                                <span class="font-semibold text-pink-700">Toon Gym Tracker</span>
+                            </label>
+                             <p class="text-sm text-pink-500 mt-1">Houd je wekelijkse aantal gymsessies bij.</p>
+                            <div id="setup-strength-details" class="mt-3 space-y-2">
+                                <label for="setup-strength-title" class="text-sm font-medium text-pink-600">Titel voor je tracker:</label>
+                                <input type="text" id="setup-strength-title" class="w-full px-3 py-2 border border-pink-200 rounded-lg" value="Aantal gymsessies per week">
+                                <label for="setup-strength-target" class="text-sm font-medium text-pink-600">Hoeveel gymsessies wil je per week doen?</label>
+                                <input type="number" id="setup-strength-target" class="w-full px-3 py-2 border border-pink-200 rounded-lg" value="4" placeholder="bv. 4">
+                            </div>
+                        </div>
+                        <!-- Self-care Tracker Setup -->
+                        <div class="bg-pink-50 p-4 rounded-lg">
+                            <label class="flex items-center space-x-3 cursor-pointer">
+                                <input type="checkbox" id="setup-show-selfcare" class="h-5 w-5 rounded border-pink-300 text-pink-600 focus:ring-pink-500" checked>
+                                <span class="font-semibold text-pink-700">Toon Zelfzorg & Ontspanning Tracker</span>
+                            </label>
+                            <p class="text-sm text-pink-500 mt-1">Houd bij hoe vaak je tijd voor jezelf neemt (bv. lezen, meditatie).</p>
+                            <div id="setup-selfcare-details" class="mt-3 space-y-2">
+                                <label for="setup-selfcare-title" class="text-sm font-medium text-pink-600">Titel voor je tracker:</label>
+                                <input type="text" id="setup-selfcare-title" class="w-full px-3 py-2 border border-pink-200 rounded-lg" value="Zelfzorgmomenten per week">
+                                <label for="setup-selfcare-target" class="text-sm font-medium text-pink-600">Hoeveel momenten per week?</label>
+                                <input type="number" id="setup-selfcare-target" class="w-full px-3 py-2 border border-pink-200 rounded-lg" value="3" placeholder="bv. 3">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-6">
+                    <h2 class="text-3xl text-pink-800 mb-3 title-font">Kies je Startdag</h2>
+                    <div class="bg-pink-50 p-4 rounded-lg">
+                        <div class="flex justify-between items-center mb-4">
+                            <button id="prev-month-btn" class="font-bold text-xl text-pink-500 hover:text-pink-700">&lt;</button>
+                            <h3 id="month-year-label" class="text-lg font-bold text-pink-700"></h3>
+                            <button id="next-month-btn" class="font-bold text-xl text-pink-500 hover:text-pink-700">&gt;</button>
+                        </div>
+                        <div class="calendar-grid text-center font-semibold text-pink-400">
+                            <div>Zo</div><div>Ma</div><div>Di</div><div>Wo</div><div>Do</div><div>Vr</div><div>Za</div>
+                        </div>
+                        <div id="calendar-days-grid" class="calendar-grid text-center text-pink-800 mt-2"></div>
+                    </div>
+                </div>
+
+                <button id="start-challenge-btn" class="w-full bg-pink-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-pink-700 text-lg transition-transform transform hover:scale-105" disabled>
+                    Start Challenge
+                </button>
+            </div>
+        </div>
+
+        <!-- Hoofdscherm Uitdaging -->
+        <div id="main-screen" class="hidden">
+            <header class="bg-white p-6 sm:p-8 rounded-2xl shadow-lg mb-6">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <h1 id="display-day-title" class="text-3xl sm:text-4xl font-bold text-pink-600"></h1>
+                        <p id="display-date" class="text-pink-500"></p>
+                    </div>
+                </div>
+                
+                <div id="reflection-container" class="mb-4"></div>
+
+                <div id="main-goal-tracker-container" class="mb-6 hidden">
+                    <h2 id="main-goal-tracker-title" class="text-2xl title-font text-pink-600"></h2>
+                    <div id="main-goal-tracker-progress" class="hidden">
+                        <div class="flex justify-between mb-1">
+                            <span id="main-goal-progress-text" class="text-sm font-medium text-pink-700"></span>
+                            <span id="main-goal-progress-percentage" class="text-sm font-medium text-pink-700"></span>
+                        </div>
+                        <div class="w-full bg-pink-200 rounded-full h-4">
+                            <div id="main-goal-progress-bar" class="bg-pink-500 h-4 rounded-full" style="width: 0%"></div>
+                        </div>
+                        <div class="flex gap-2 mt-4">
+                            <input type="number" id="main-goal-input" placeholder="Voeg waarde toe" class="w-full px-3 py-2 border border-pink-200 rounded-lg focus:ring-2 focus:ring-pink-500 bg-white">
+                            <button id="add-main-goal-btn" class="bg-pink-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-pink-700">Voeg toe</button>
+                            <button id="remove-main-goal-btn" class="bg-gray-400 text-white font-semibold py-2 px-4 rounded-lg hover:bg-gray-500">Reset</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="weekly-trackers-container" class="space-y-6 mb-6">
+                    <!-- Wekelijkse trackers worden hier dynamisch ingevoegd -->
+                </div>
+                
+                <div>
+                    <h2 class="text-lg font-semibold mb-2 text-pink-600">Voortgang</h2>
+                     <div class="flex flex-col sm:flex-row gap-4 sm:gap-6">
+                         <div class="flex-1">
+                             <div class="flex justify-between mb-1">
+                                 <span class="text-base font-medium text-pink-700"></span>
+                                 <span id="progress-text" class="text-sm font-medium text-pink-700">0%</span>
+                             </div>
+                             <div class="w-full bg-pink-200 rounded-full h-4">
+                                 <div id="progress-bar-fill" class="bg-pink-500 h-4 rounded-full" style="width: 0%"></div>
+                             </div>
+                         </div>
+                         <div class="text-center sm:text-left">
+                              <span class="text-base font-medium text-pink-600">Daily Streak</span>
+                              <p id="streak-counter" class="text-2xl font-bold text-pink-700">🔥 0 Dagen</p>
+                         </div>
+                     </div>
+                </div>
+            </header>
+
+            <div class="flex justify-center items-center gap-2 mb-6 p-1 bg-pink-100 rounded-lg max-w-xs mx-auto">
+                <button id="today-view-btn" class="view-btn flex-1 py-2 px-4 rounded-md text-sm font-semibold">Vandaag</button>
+                <button id="overview-view-btn" class="view-btn flex-1 py-2 px-4 rounded-md text-sm font-semibold">Overzicht</button>
+            </div>
+
+            <div id="today-view-container"></div>
+            <div id="challenges-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 hidden"></div>
+            
+            <div class="mt-8 text-center">
+                <button id="reset-challenge-btn" class="bg-pink-600 text-white font-semibold py-2 px-6 rounded-lg hover:bg-pink-700">
+                    Maak nieuwe challenge
+                </button>
+            </div>
+        </div>
+        
+        <div id="modal-backdrop" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50 opacity-0">
+            <div id="modal-content" class="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-lg max-h-[80vh] overflow-y-auto transform scale-95">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 id="modal-title" class="text-xl font-bold text-pink-900"></h3>
+                    <button id="modal-close-btn" class="text-pink-500 hover:text-pink-800 text-2xl">&times;</button>
+                </div>
+                <div id="modal-body" class="prose max-w-none text-pink-800"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- Globale DOM Elementen & Variabelen ---
+            const landingScreen = document.getElementById('landing-screen');
+            const setupScreen = document.getElementById('setup-screen');
+            const mainScreen = document.getElementById('main-screen');
+            let challengeData = {};
+            let currentView = 'today';
+            let viewedDayNumber = 1;
+
+            // --- Vaste Quotes ---
+            const dailyQuotes = [
+                { quote: "The only bad workout is the one that didn't happen.", author: "Unknown" },
+                { quote: "Believe you can and you're halfway there.", author: "Theodore Roosevelt" },
+                { quote: "Success is the sum of small efforts, repeated day in and day out.", author: "Robert Collier" },
+                { quote: "The body achieves what the mind believes.", author: "Napoleon Hill" },
+                { quote: "Don't watch the clock; do what it does. Keep going.", author: "Sam Levenson" },
+                { quote: "Strive for progress, not perfection.", author: "Unknown" },
+                { quote: "Your only limit is you.", author: "Unknown" },
+                { quote: "Push yourself because no one else is going to do it for you.", author: "Unknown" },
+                { quote: "A little progress each day adds up to big results.", author: "Unknown" },
+                { quote: "The secret of getting ahead is getting started.", author: "Mark Twain" },
+                { quote: "It’s going to be a journey. It’s not a sprint to get in shape.", author: "Kerri Walsh Jennings" },
+                { quote: "The pain you feel today will be the strength you feel tomorrow.", author: "Arnold Schwarzenegger" },
+                { quote: "Do something today that your future self will thank you for.", author: "Sean Patrick Flanery" },
+                { quote: "You are stronger than you think.", author: "Unknown" },
+                { quote: "The difference between the impossible and the possible lies in a person’s determination.", author: "Tommy Lasorda" },
+                { quote: "Wake up with determination. Go to bed with satisfaction.", author: "Unknown" },
+                { quote: "Strength does not come from physical capacity. It comes from an indomitable will.", author: "Mahatma Gandhi" },
+                { quote: "The future depends on what you do today.", author: "Mahatma Gandhi" },
+                { quote: "Fall in love with the process, and the results will come.", author: "Eric Thomas" },
+                { quote: "The harder you work for something, the greater you’ll feel when you achieve it.", author: "Unknown" },
+                { quote: "Don’t limit your challenges. Challenge your limits.", author: "Unknown" },
+                { quote: "Motivation is what gets you started. Habit is what keeps you going.", author: "Jim Ryun" },
+                { quote: "You don’t have to be extreme, just consistent.", author: "Unknown" },
+                { quote: "Be stronger than your strongest excuse.", author: "Unknown" },
+                { quote: "The best project you'll ever work on is you.", author: "Unknown" },
+                { quote: "Discipline is choosing between what you want now and what you want most.", author: "Abraham Lincoln" },
+                { quote: "It always seems impossible until it's done.", author: "Nelson Mandela" },
+                { quote: "Consistency is more important than perfection.", author: "Unknown" },
+                { quote: "Your body can stand almost anything. It’s your mind that you have to convince.", author: "Unknown" },
+                { quote: "One day or day one. You decide.", author: "Unknown" }
+            ];
+
+            // --- Landingspagina Logica ---
+            const commitmentCheckbox = document.getElementById('commitment-checkbox');
+
+            commitmentCheckbox.addEventListener('change', () => {
+                if (commitmentCheckbox.checked) {
+                    localStorage.setItem('commitmentMade', 'true');
+                    setTimeout(() => {
+                        landingScreen.classList.add('hidden');
+                        showSetupScreen();
+                    }, 300);
+                }
+            });
+
+            // --- Setup Scherm Logica ---
+            const setupElements = {
+                tasksList: document.getElementById('tasks-list'),
+                newTaskInput: document.getElementById('new-task-input'),
+                addTaskBtn: document.getElementById('add-task-btn'),
+                monthYearLabel: document.getElementById('month-year-label'),
+                calendarGrid: document.getElementById('calendar-days-grid'),
+                prevMonthBtn: document.getElementById('prev-month-btn'),
+                nextMonthBtn: document.getElementById('next-month-btn'),
+                startChallengeBtn: document.getElementById('start-challenge-btn'),
+                showMainGoal: document.getElementById('setup-show-main-goal'),
+                mainGoalDetails: document.getElementById('setup-main-goal-details'),
+                mainGoalTitle: document.getElementById('setup-main-goal-title'),
+                mainGoalHasTracker: document.getElementById('setup-main-goal-has-tracker'),
+                mainGoalTrackerInput: document.getElementById('setup-main-goal-tracker-input'),
+                mainGoalTarget: document.getElementById('setup-main-goal-target'),
+                showCardio: document.getElementById('setup-show-cardio'),
+                cardioDetails: document.getElementById('setup-cardio-details'),
+                cardioTitle: document.getElementById('setup-cardio-title'),
+                cardioTarget: document.getElementById('setup-cardio-target'),
+                showStrength: document.getElementById('setup-show-strength'),
+                strengthDetails: document.getElementById('setup-strength-details'),
+                strengthTitle: document.getElementById('setup-strength-title'),
+                strengthTarget: document.getElementById('setup-strength-target'),
+                showSelfcare: document.getElementById('setup-show-selfcare'),
+                selfcareDetails: document.getElementById('setup-selfcare-details'),
+                selfcareTitle: document.getElementById('setup-selfcare-title'),
+                selfcareTarget: document.getElementById('setup-selfcare-target'),
+            };
+            
+            let setupState = {
+                tasks: [
+                    'Max. 2000 kcal',
+                    'Min. 10.000 stappen',
+                    '2 liter water drinken',
+                    'Minstens 120 gram eiwitten',
+                    'Multivitaminen ingenomen',
+                    'Creatine ingenomen'
+                ],
+                selectedDate: null,
+                calendarDate: new Date()
+            };
+            
+            // --- Hoofdscherm Logica ---
+            const mainElements = {
+                displayDayTitle: document.getElementById('display-day-title'),
+                displayDate: document.getElementById('display-date'),
+                progressText: document.getElementById('progress-text'),
+                progressBarFill: document.getElementById('progress-bar-fill'),
+                streakCounter: document.getElementById('streak-counter'),
+                challengesGrid: document.getElementById('challenges-grid'),
+                resetChallengeBtn: document.getElementById('reset-challenge-btn'),
+                mainGoalTrackerContainer: document.getElementById('main-goal-tracker-container'),
+                mainGoalTrackerTitle: document.getElementById('main-goal-tracker-title'),
+                mainGoalTrackerProgress: document.getElementById('main-goal-tracker-progress'),
+                mainGoalProgressText: document.getElementById('main-goal-progress-text'),
+                mainGoalProgressPercentage: document.getElementById('main-goal-progress-percentage'),
+                mainGoalProgressBar: document.getElementById('main-goal-progress-bar'),
+                mainGoalInput: document.getElementById('main-goal-input'),
+                addMainGoalBtn: document.getElementById('add-main-goal-btn'),
+                removeMainGoalBtn: document.getElementById('remove-main-goal-btn'),
+                weeklyTrackersContainer: document.getElementById('weekly-trackers-container'),
+                todayViewBtn: document.getElementById('today-view-btn'),
+                overviewViewBtn: document.getElementById('overview-view-btn'),
+                todayViewContainer: document.getElementById('today-view-container'),
+                reflectionContainer: document.getElementById('reflection-container'),
+                modalBackdrop: document.getElementById('modal-backdrop'),
+                modalContent: document.getElementById('modal-content'),
+                modalTitle: document.getElementById('modal-title'),
+                modalBody: document.getElementById('modal-body'),
+                modalCloseBtn: document.getElementById('modal-close-btn'),
+            };
+            
+            // --- Helper & Data Functies ---
+            const saveData = () => localStorage.setItem('fitnessChallengeData', JSON.stringify(challengeData));
+
+            const createChallengeData = (tasks, startDate, mainGoal, weeklyGoals) => {
+                const challenges = [];
+                for (let i = 1; i <= 30; i++) {
+                    challenges.push({
+                        day: i,
+                        allTasksComplete: false,
+                        tasks: tasks.map(taskText => ({ text: taskText, completed: false })),
+                        notes: ''
+                    });
+                }
+                return {
+                    challenges: challenges,
+                    mainGoal: mainGoal,
+                    weeklyGoals: weeklyGoals,
+                    mainGoalProgress: { history: [] },
+                    weeklyProgress: {
+                        cardio: { weeks: [0, 0, 0, 0, 0] },
+                        strength: { weeks: [0, 0, 0, 0, 0] },
+                        selfcare: { weeks: [0, 0, 0, 0, 0] },
+                    },
+                    celebrated: false,
+                    startDate: startDate.toISOString(),
+                    lastCompletedDay: 0
+                };
+            };
+
+            function showModal(title, body) {
+                mainElements.modalTitle.textContent = title;
+                mainElements.modalBody.innerHTML = body;
+                mainElements.modalBackdrop.classList.remove('hidden');
+                setTimeout(() => {
+                    mainElements.modalBackdrop.classList.remove('opacity-0');
+                    mainElements.modalContent.classList.remove('scale-95');
+                }, 10);
+            }
+
+            function hideModal() {
+                mainElements.modalBackdrop.classList.add('opacity-0');
+                mainElements.modalContent.classList.add('scale-95');
+                setTimeout(() => mainElements.modalBackdrop.classList.add('hidden'), 300);
+            }
+
+            function checkStartButtonState() {
+                let trackersValid = true;
+                if (setupElements.showMainGoal.checked && setupElements.mainGoalHasTracker.checked && setupElements.mainGoalTarget.value.trim() === '') trackersValid = false;
+                if (setupElements.showCardio.checked && setupElements.cardioTarget.value.trim() === '') trackersValid = false;
+                if (setupElements.showStrength.checked && setupElements.strengthTarget.value.trim() === '') trackersValid = false;
+                if (setupElements.showSelfcare.checked && setupElements.selfcareTarget.value.trim() === '') trackersValid = false;
+
+                setupElements.startChallengeBtn.disabled = !setupState.selectedDate || !trackersValid;
+            }
+
+            function renderTasks() {
+                setupElements.tasksList.innerHTML = '';
+                setupState.tasks.forEach((task, index) => {
+                    const li = document.createElement('li');
+                    li.className = 'flex justify-between items-center bg-pink-50 p-2 rounded-lg';
+                    li.innerHTML = `
+                        <span class="text-pink-800">${task}</span>
+                        <button data-index="${index}" class="remove-task-btn text-red-500 font-bold px-2 hover:text-red-700">&times;</button>
+                    `;
+                    setupElements.tasksList.appendChild(li);
+                });
+            }
+
+            function renderCalendar() {
+                const year = setupState.calendarDate.getFullYear();
+                const month = setupState.calendarDate.getMonth();
+                const monthNames = ["Januari", "Februari", "Maart", "April", "Mei", "Juni", "Juli", "Augustus", "September", "Oktober", "November", "December"];
+                setupElements.monthYearLabel.textContent = `${monthNames[month]} ${year}`;
+
+                setupElements.calendarGrid.innerHTML = '';
+                const firstDayOfMonth = new Date(year, month, 1).getDay();
+                const daysInMonth = new Date(year, month + 1, 0).getDate();
+                const adjustedFirstDay = (firstDayOfMonth === 0) ? 6 : firstDayOfMonth - 1;
+
+                for (let i = 0; i < adjustedFirstDay; i++) {
+                    const emptyCell = document.createElement('div');
+                    emptyCell.className = 'calendar-day empty';
+                    setupElements.calendarGrid.appendChild(emptyCell);
+                }
+
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const dayCell = document.createElement('div');
+                    dayCell.className = 'calendar-day';
+                    dayCell.textContent = day;
+                    dayCell.dataset.date = new Date(year, month, day).toISOString();
+
+                    if (setupState.selectedDate && new Date(dayCell.dataset.date).toDateString() === setupState.selectedDate.toDateString()) {
+                        dayCell.classList.add('selected');
+                    }
+                    setupElements.calendarGrid.appendChild(dayCell);
+                }
+            }
+            
+            function initializeSetupScreen() {
+                renderTasks();
+                renderCalendar();
+                
+                setupElements.addTaskBtn.addEventListener('click', () => {
+                    const newTaskText = setupElements.newTaskInput.value.trim();
+                    if (newTaskText) {
+                        setupState.tasks.push(newTaskText);
+                        setupElements.newTaskInput.value = '';
+                        renderTasks();
+                    }
+                });
+
+                setupElements.tasksList.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('remove-task-btn')) {
+                        const index = parseInt(e.target.dataset.index, 10);
+                        setupState.tasks.splice(index, 1);
+                        renderTasks();
+                    }
+                });
+
+                setupElements.prevMonthBtn.addEventListener('click', () => {
+                    setupState.calendarDate.setMonth(setupState.calendarDate.getMonth() - 1);
+                    renderCalendar();
+                });
+
+                setupElements.nextMonthBtn.addEventListener('click', () => {
+                    setupState.calendarDate.setMonth(setupState.calendarDate.getMonth() + 1);
+                    renderCalendar();
+                });
+
+                setupElements.calendarGrid.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('calendar-day') && !e.target.classList.contains('empty')) {
+                        setupState.selectedDate = new Date(e.target.dataset.date);
+                        renderCalendar();
+                        checkStartButtonState();
+                    }
+                });
+
+                [setupElements.showMainGoal, setupElements.showCardio, setupElements.showStrength, setupElements.showSelfcare, setupElements.mainGoalHasTracker].forEach(el => el.addEventListener('change', checkStartButtonState));
+                [setupElements.mainGoalTarget, setupElements.cardioTarget, setupElements.strengthTarget, setupElements.selfcareTarget].forEach(el => el.addEventListener('input', checkStartButtonState));
+
+                setupElements.showMainGoal.addEventListener('change', () => {
+                    setupElements.mainGoalDetails.classList.toggle('hidden', !setupElements.showMainGoal.checked);
+                });
+                 setupElements.mainGoalHasTracker.addEventListener('change', () => {
+                    setupElements.mainGoalTrackerInput.classList.toggle('hidden', !setupElements.mainGoalHasTracker.checked);
+                });
+                setupElements.showCardio.addEventListener('change', () => {
+                    setupElements.cardioDetails.classList.toggle('hidden', !setupElements.showCardio.checked);
+                });
+                setupElements.showStrength.addEventListener('change', () => {
+                    setupElements.strengthDetails.classList.toggle('hidden', !setupElements.showStrength.checked);
+                });
+                 setupElements.showSelfcare.addEventListener('change', () => {
+                    setupElements.selfcareDetails.classList.toggle('hidden', !setupElements.showSelfcare.checked);
+                });
+
+                setupElements.startChallengeBtn.addEventListener('click', () => {
+                    if (setupState.selectedDate && setupState.tasks.length > 0) {
+                        const mainGoal = {
+                            show: setupElements.showMainGoal.checked,
+                            title: setupElements.mainGoalTitle.value,
+                            hasTracker: setupElements.mainGoalHasTracker.checked,
+                            target: parseInt(setupElements.mainGoalTarget.value, 10) || 100
+                        };
+                        const weeklyGoals = [
+                            { id: 'cardio', show: setupElements.showCardio.checked, title: setupElements.cardioTitle.value, target: parseInt(setupElements.cardioTarget.value, 10) || 3, icon: '🏃‍♀️' },
+                            { id: 'strength', show: setupElements.showStrength.checked, title: setupElements.strengthTitle.value, target: parseInt(setupElements.strengthTarget.value, 10) || 4, icon: '🏋️‍♀️' },
+                            { id: 'selfcare', show: setupElements.showSelfcare.checked, title: setupElements.selfcareTitle.value, target: parseInt(setupElements.selfcareTarget.value, 10) || 3, icon: '📖' }
+                        ];
+                        challengeData = createChallengeData(setupState.tasks, setupState.selectedDate, mainGoal, weeklyGoals);
+                        saveData();
+                        showMainScreen();
+                        initializeAppMain();
+                    }
+                });
+            }
+
+            function updateTitle() {
+                const dayNumber = determineCurrentDay();
+                const today = new Date();
+                const options = { year: 'numeric', month: 'long', day: 'numeric' };
+                const formattedDate = today.toLocaleDateString('nl-BE', options);
+                mainElements.displayDayTitle.textContent = `Dag ${dayNumber}`;
+                mainElements.displayDate.textContent = formattedDate;
+            }
+
+            function updateDailyProgress() {
+                const completedDays = challengeData.challenges.filter(c => c.allTasksComplete).length;
+                const progressPercentage = Math.round((completedDays / 30) * 100);
+                mainElements.progressText.textContent = `${progressPercentage}%`;
+                mainElements.progressBarFill.style.width = `${progressPercentage}%`;
+                if (progressPercentage === 100 && !challengeData.celebrated) {
+                    confetti({ particleCount: 150, spread: 90, origin: { y: 0.6 } });
+                    challengeData.celebrated = true;
+                    saveData();
+                }
+            }
+
+            function updateStreak() {
+                let currentStreak = 0;
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const startDate = new Date(challengeData.startDate);
+                startDate.setHours(0, 0, 0, 0);
+
+                for (let i = 0; i < challengeData.challenges.length; i++) {
+                    const dayData = challengeData.challenges[i];
+                    const dayDate = new Date(startDate);
+                    dayDate.setDate(startDate.getDate() + i);
+
+                    if (dayDate > today) break;
+
+                    if (dayData.allTasksComplete) {
+                        currentStreak++;
+                    } else {
+                        if (dayDate < today) {
+                            currentStreak = 0;
+                        }
+                    }
+                }
+                mainElements.streakCounter.innerHTML = `🔥 ${currentStreak} Dag${currentStreak !== 1 ? 'en' : ''}`;
+            }
+            
+            function updateMainGoalProgress() {
+                if (!challengeData.mainGoal.show) return;
+                mainElements.mainGoalTrackerProgress.classList.toggle('hidden', !challengeData.mainGoal.hasTracker);
+                if (!challengeData.mainGoal.hasTracker) return;
+
+                const current = challengeData.mainGoalProgress.history.reduce((a, b) => a + b, 0);
+                const target = challengeData.mainGoal.target;
+                const percentage = Math.min(Math.round((current / target) * 100), 100);
+                mainElements.mainGoalProgressText.textContent = `${current.toFixed(1)} / ${target}`;
+                mainElements.mainGoalProgressPercentage.textContent = `${percentage}%`;
+                mainElements.mainGoalProgressBar.style.width = `${percentage}%`;
+                mainElements.removeMainGoalBtn.disabled = challengeData.mainGoalProgress.history.length === 0;
+            }
+
+            function updateWeeklyProgress(goal) {
+                const currentDayNumber = determineCurrentDay();
+                const currentWeekIndex = Math.floor((currentDayNumber - 1) / 7);
+                const sessionsThisWeek = challengeData.weeklyProgress[goal.id].weeks[currentWeekIndex] || 0;
+                const target = goal.target;
+                
+                const container = document.getElementById(`${goal.id}-tracker-icons`);
+                if (!container) return;
+
+                let iconsHTML = '';
+                for (let i = 0; i < target; i++) {
+                    const isCompleted = i < sessionsThisWeek;
+                    iconsHTML += `<button data-tracker-id="${goal.id}" data-session-index="${i}" class="weekly-session-icon text-3xl transition-transform transform ${isCompleted ? 'scale-110' : ''}">${isCompleted ? goal.icon : '⚪'}</button>`;
+                }
+                container.innerHTML = iconsHTML;
+            }
+
+            function determineCurrentDay() {
+                const startDate = new Date(challengeData.startDate);
+                startDate.setHours(0, 0, 0, 0);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const diffTime = today - startDate;
+                if (diffTime < 0) return 1;
+                const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                return Math.min(diffDays + 1, 30);
+            }
+
+            function displayDailyQuote() {
+                const quoteTextEl = document.getElementById('quote-text');
+                const quoteAuthorEl = document.getElementById('quote-author');
+                const dayNumber = viewedDayNumber;
+                const quoteData = dailyQuotes[dayNumber - 1] || dailyQuotes[0];
+                
+                quoteTextEl.textContent = `"${quoteData.quote}"`;
+                quoteAuthorEl.textContent = `- ${quoteData.author}`;
+            }
+
+            function renderTodayView() {
+                const day = challengeData.challenges.find(d => d.day === viewedDayNumber);
+                if (!day) {
+                    mainElements.todayViewContainer.innerHTML = `<p class="text-center">Ongeldige dag.</p>`;
+                    return;
+                }
+                let tasksHTML = '';
+                day.tasks.forEach((task, index) => {
+                    tasksHTML += `
+                        <div class="task-item flex items-center gap-4 py-2 ${task.completed ? 'completed' : ''}" data-task-index="${index}">
+                            <button class="toggle-task-btn text-3xl p-1">${task.completed ? '✅' : '🔲'}</button>
+                            <p class="task-text text-lg text-pink-700">${task.text}</p>
+                        </div>`;
+                });
+
+                mainElements.todayViewContainer.innerHTML = `
+                    <div class="day-card max-w-lg mx-auto p-6 border rounded-2xl shadow-lg bg-white flex flex-col gap-4 ${day.allTasksComplete ? 'all-complete' : ''}" data-day="${day.day}">
+                        <div class="flex items-center justify-between">
+                             <h2 class="text-2xl font-bold text-pink-800">Quote of the Day</h2>
+                             <div class="flex items-center space-x-2">
+                                <button id="prev-day-btn" class="text-2xl text-pink-400 hover:text-pink-600" ${viewedDayNumber <= 1 ? 'disabled' : ''}>‹</button>
+                                <span class="day-badge inline-flex items-center justify-center w-12 h-12 rounded-full bg-pink-100 text-pink-800 font-bold text-lg">${day.day}</span>
+                                <button id="next-day-btn" class="text-2xl text-pink-400 hover:text-pink-600" ${viewedDayNumber >= 30 ? 'disabled' : ''}>›</button>
+                             </div>
+                        </div>
+                        <div id="quote-container" class="p-4 bg-pink-50 rounded-lg text-center">
+                            <p id="quote-text" class="quote-font text-pink-700"></p>
+                            <p id="quote-author" class="font-semibold text-pink-500 mt-2"></p>
+                        </div>
+                        <div class="space-y-2 border-t border-b border-pink-200 py-4">${tasksHTML}</div>
+                        <textarea class="notes-input w-full p-2 bg-pink-50 border rounded-md text-sm text-pink-800 placeholder-pink-400" placeholder="Voeg een notitie voor vandaag toe...">${day.notes}</textarea>
+                    </div>`;
+                displayDailyQuote();
+            }
+
+            function renderOverview() {
+                mainElements.challengesGrid.innerHTML = '';
+                const currentDay = determineCurrentDay();
+                challengeData.challenges.forEach(day => {
+                    const card = document.createElement('div');
+                    const isFutureDay = day.day > currentDay;
+                    card.className = `day-card p-4 border rounded-xl shadow-sm bg-white flex flex-col gap-3 ${day.allTasksComplete ? 'all-complete' : ''} ${isFutureDay ? 'opacity-50' : ''}`;
+                    card.dataset.day = day.day;
+                    let tasksHTML = '';
+                    day.tasks.forEach((task, index) => {
+                        tasksHTML += `
+                            <div class="task-item flex items-center gap-3 ${task.completed ? 'completed' : ''}" data-task-index="${index}">
+                                <button class="toggle-task-btn text-2xl p-1" ${isFutureDay ? 'disabled' : ''}>${task.completed ? '✅' : '🔲'}</button>
+                                <p class="task-text text-sm text-pink-700">${task.text}</p>
+                            </div>`;
+                    });
+                    card.innerHTML = `
+                        <div class="flex items-center justify-between">
+                            <span class="day-badge inline-flex items-center justify-center w-10 h-10 rounded-full bg-pink-100 text-pink-800 font-bold">${day.day}</span>
+                        </div>
+                        <div class="space-y-2">${tasksHTML}</div>
+                        <textarea class="notes-input w-full p-2 bg-pink-50 border rounded-md text-sm text-pink-800 placeholder-pink-400" placeholder="Voeg een notitie toe..." ${isFutureDay ? 'disabled' : ''}>${day.notes}</textarea>
+                    `;
+                    mainElements.challengesGrid.appendChild(card);
+                });
+            }
+
+            function renderMain() {
+                mainElements.todayViewBtn.classList.toggle('active-view', currentView === 'today');
+                mainElements.overviewViewBtn.classList.toggle('active-view', currentView === 'overview');
+                mainElements.todayViewContainer.classList.toggle('hidden', currentView !== 'today');
+                mainElements.challengesGrid.classList.toggle('hidden', currentView !== 'overview');
+                if (currentView === 'today') renderTodayView();
+                else renderOverview();
+            }
+
+            function renderTrackers() {
+                mainElements.mainGoalTrackerContainer.classList.toggle('hidden', !challengeData.mainGoal.show);
+                if (challengeData.mainGoal.show) {
+                    mainElements.mainGoalTrackerTitle.textContent = challengeData.mainGoal.title;
+                }
+
+                mainElements.weeklyTrackersContainer.innerHTML = '';
+                challengeData.weeklyGoals.forEach(goal => {
+                    if (goal.show) {
+                        const trackerDiv = document.createElement('div');
+                        trackerDiv.innerHTML = `
+                            <h2 class="text-lg font-semibold mb-2 text-pink-600">${goal.title}</h2>
+                            <div id="${goal.id}-tracker-icons" class="flex items-center gap-3"></div>
+                        `;
+                        mainElements.weeklyTrackersContainer.appendChild(trackerDiv);
+                        updateWeeklyProgress(goal);
+                    }
+                });
+            }
+
+            function updateAllStats() {
+                updateTitle();
+                updateDailyProgress();
+                updateStreak();
+                renderTrackers();
+                updateMainGoalProgress();
+                challengeData.weeklyGoals.forEach(updateWeeklyProgress);
+            }
+
+            function initializeAppMain() {
+                viewedDayNumber = determineCurrentDay();
+                currentView = localStorage.getItem('challengeView') || 'today';
+                updateAllStats();
+                renderMain();
+                mainElements.addMainGoalBtn.disabled = mainElements.mainGoalInput.value.trim() === '';
+            }
+
+            // --- App Flow & Event Listeners ---
+            function showSetupScreen() {
+                mainScreen.classList.add('hidden');
+                setupScreen.classList.remove('hidden');
+                initializeSetupScreen();
+            }
+
+            function showMainScreen() {
+                setupScreen.classList.add('hidden');
+                mainScreen.classList.remove('hidden');
+            }
+
+            mainElements.todayViewBtn.addEventListener('click', () => { 
+                viewedDayNumber = determineCurrentDay();
+                if (currentView !== 'today') { 
+                    currentView = 'today'; 
+                    localStorage.setItem('challengeView', currentView); 
+                    renderMain(); 
+                } else {
+                    renderTodayView();
+                }
+            });
+            mainElements.overviewViewBtn.addEventListener('click', () => { if (currentView !== 'overview') { currentView = 'overview'; localStorage.setItem('challengeView', currentView); renderMain(); } });
+            
+            mainElements.addMainGoalBtn.addEventListener('click', () => {
+                const value = parseFloat(mainElements.mainGoalInput.value);
+                if (!isNaN(value) && value > 0) {
+                    challengeData.mainGoalProgress.history.push(value);
+                    mainElements.mainGoalInput.value = '';
+                    mainElements.addMainGoalBtn.disabled = true;
+                    updateMainGoalProgress();
+                    saveData();
+                }
+            });
+            mainElements.removeMainGoalBtn.addEventListener('click', () => {
+                if (challengeData.mainGoalProgress.history.length > 0) {
+                    challengeData.mainGoalProgress.history.pop();
+                    updateMainGoalProgress();
+                    saveData();
+                }
+            });
+            mainElements.mainGoalInput.addEventListener('input', () => {
+                mainElements.addMainGoalBtn.disabled = mainElements.mainGoalInput.value.trim() === '';
+            });
+
+            mainElements.resetChallengeBtn.addEventListener('click', () => {
+                showModal('Nieuwe Challenge', `
+                    <p>Weet je zeker dat je een nieuwe challenge wilt starten? Je huidige voortgang gaat verloren.</p>
+                    <div class="flex justify-end gap-4 mt-6">
+                        <button id="confirm-reset-cancel" class="bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded-lg hover:bg-gray-400">Annuleren</button>
+                        <button id="confirm-reset-ok" class="bg-red-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-red-600">Ja, start opnieuw</button>
+                    </div>
+                `);
+            });
+            mainScreen.addEventListener('click', (e) => {
+                if (e.target.id === 'prev-day-btn' && viewedDayNumber > 1) {
+                    viewedDayNumber--;
+                    renderTodayView();
+                }
+                if (e.target.id === 'next-day-btn' && viewedDayNumber < 30) {
+                    viewedDayNumber++;
+                    renderTodayView();
+                }
+                
+                const weeklyIcon = e.target.closest('.weekly-session-icon');
+                if(weeklyIcon) {
+                    const trackerId = weeklyIcon.dataset.trackerId;
+                    const sessionIndex = parseInt(weeklyIcon.dataset.sessionIndex, 10);
+                    const currentDayNumber = determineCurrentDay();
+                    const currentWeekIndex = Math.floor((currentDayNumber - 1) / 7);
+                    const currentSessions = challengeData.weeklyProgress[trackerId].weeks[currentWeekIndex] || 0;
+                    
+                    if (sessionIndex + 1 === currentSessions) {
+                        challengeData.weeklyProgress[trackerId].weeks[currentWeekIndex]--;
+                    } else {
+                        challengeData.weeklyProgress[trackerId].weeks[currentWeekIndex] = sessionIndex + 1;
+                    }
+                    const goal = challengeData.weeklyGoals.find(g => g.id === trackerId);
+                    updateWeeklyProgress(goal);
+                    saveData();
+                }
+
+                const button = e.target.closest('.toggle-task-btn');
+                if (button) {
+                    const card = e.target.closest('.day-card');
+                    const taskItem = e.target.closest('.task-item');
+                    const dayIndex = challengeData.challenges.findIndex(d => d.day == card.dataset.day);
+                    if (dayIndex === -1) return;
+                    const taskIndex = parseInt(taskItem.dataset.taskIndex);
+                    const task = challengeData.challenges[dayIndex].tasks[taskIndex];
+                    task.completed = !task.completed;
+                    const allDone = challengeData.challenges[dayIndex].tasks.every(t => t.completed);
+                    challengeData.challenges[dayIndex].allTasksComplete = allDone;
+                    renderMain();
+                    updateAllStats();
+                    saveData();
+                }
+            });
+            mainScreen.addEventListener('input', (e) => {
+                if (e.target.classList.contains('notes-input')) {
+                    const card = e.target.closest('.day-card');
+                    const dayIndex = challengeData.challenges.findIndex(d => d.day == card.dataset.day);
+                    if (dayIndex > -1) {
+                       challengeData.challenges[dayIndex].notes = e.target.value;
+                       saveData();
+                    }
+                }
+            });
+            
+            mainElements.modalBackdrop.addEventListener('click', (e) => {
+                if (e.target === mainElements.modalBackdrop || e.target.id === 'modal-close-btn' || e.target.id === 'confirm-reset-cancel') {
+                    hideModal();
+                }
+                if (e.target.id === 'confirm-reset-ok') {
+                    localStorage.removeItem('fitnessChallengeData');
+                    localStorage.removeItem('commitmentMade');
+                    hideModal();
+                    location.reload(); // Herlaad de pagina om schoon te beginnen
+                }
+            });
+
+            // --- App Initialisatie ---
+            const savedData = localStorage.getItem('fitnessChallengeData');
+            const commitmentMade = localStorage.getItem('commitmentMade');
+
+            if (savedData) {
+                challengeData = JSON.parse(savedData);
+                showMainScreen();
+                initializeAppMain();
+            } else if (commitmentMade) {
+                showSetupScreen();
+            }
+            else {
+                landingScreen.classList.remove('hidden');
+            }
+        });
+    </script>
+</body>
+</html>
