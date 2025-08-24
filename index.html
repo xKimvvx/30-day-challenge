@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>30 Dagen Fitness Uitdaging</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
+    <script src="types.ts"></script>
+    <script src="app.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; transition: background-color 0.3s, color 0.3s; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #fce7f3; }
+        ::-webkit-scrollbar-thumb { background: #f472b6; border-radius: 10px; }
+        .day-card.all-complete { background-color: #fce7f3; border-color: #ec4899; }
+        .day-card.all-complete .day-badge { background-color: #ec4899; color: white; }
+        .task-item.completed .task-text { text-decoration: line-through; color: #f9a8d4; }
+        .day-card, .progress-bar-fill, .view-btn { transition: all 0.3s ease-in-out; }
+        #celebration-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9999; }
+        .view-btn.active-view { background-color: white; color: #ec4899; box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        .title-font { font-family: 'Dancing Script', cursive; }
+        .quote-font { font-family: 'Dancing Script', cursive; font-size: 1.75rem; line-height: 2.25rem; }
+    </style>
+</head>
+<body class="bg-pink-50 text-pink-800">
+    <canvas id="celebration-canvas"></canvas>
+    <div id="app-container" class="max-w-4xl mx-auto p-4 sm:p-6">
+        <!-- Landing Screen -->
+        <div id="landing-screen" class="hidden text-center">
+            <div class="bg-white p-8 rounded-2xl shadow-lg">
+                <h1 class="text-4xl font-bold text-pink-600 mb-4 title-font">Klaar voor een reset? Let's go! 🔥</h1>
+                <!-- Rest of landing screen content -->
+            </div>
+        </div>
+
+        <!-- Setup Screen -->
+        <div id="setup-screen" class="hidden">
+            <!-- Setup screen content -->
+        </div>
+
+        <!-- Main Screen -->
+        <div id="main-screen" class="hidden">
+            <!-- Main screen content -->
+        </div>
+
+        <!-- Modal -->
+        <div id="modal-backdrop" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50 opacity-0">
+            <!-- Modal content -->
+        </div>
+    </div>
+</body>
+</html>
